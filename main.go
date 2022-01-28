@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/binary"
+	"flag"
 	"fmt"
 	"os"
 )
@@ -15,8 +16,13 @@ const MinRequiredFileLength = FileMetaBytesQuantity + 1
 
 func main() {
 
-	f, err := os.Open("1-1642796694.873134717.flb")
-	//f, err := os.Open("test.txt")
+	fileName := flag.String("file", "chunk.flb", "File to be processed")
+	flag.Parse()
+
+	fmt.Printf("Filename %s\n", *fileName)
+
+	f, err := os.Open(*fileName)
+
 	check(err)
 	defer f.Close()
 
