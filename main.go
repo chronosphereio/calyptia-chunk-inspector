@@ -4,8 +4,12 @@ import (
 	"encoding/binary"
 	"flag"
 	"fmt"
+	"io/fs"
+	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 const (
@@ -21,9 +25,9 @@ var verbose *bool
 
 func main() {
 
-	fileName := flag.String("file", "chunk.flb", "File to be processed")
+	fileName := flag.String("file", "", "File to be processed")
 	verbose = flag.Bool("v", false, "Activates verbose mode")
-	//directory := flag.String("dir", ".", "Directory containing the file(s) to process")
+	directory := flag.String("dir", ".", "Directory containing the file(s) to process")
 	flag.Parse()
 
 	if *verbose {
@@ -31,9 +35,29 @@ func main() {
 	} else {
 		log.SetOutput(os.Stderr)
 	}
-	fmt.Printf("Filename %s\n", *fileName)
 
-	f, err := os.Open(*fileName)
+	if *fileName != "" {
+		checkFile(*fileName)
+		os.Exit(0)
+	}
+
+	if *directory != "" {
+		_, err := ioutil.ReadDir(*directory)
+		check(err)
+		filepath.Walk(*directory,
+			func(path string, info fs.FileInfo, err error) error {
+				if strings.HasSuffix(path, ".flb") {
+					checkFile(path)
+				}
+				return nil
+			})
+	}
+}
+
+func checkFile(fileName string) {
+	fmt.Printf("Filename %s\n", fileName)
+
+	f, err := os.Open(fileName)
 
 	check(err)
 	defer f.Close()
