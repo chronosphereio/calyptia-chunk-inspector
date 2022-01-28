@@ -11,6 +11,7 @@ const CRCBytesQuantity = 4
 const CRCPaddingBytesQuantity = 16
 const MetadataLengthBytesQuantity = 2
 const FileMetaBytesQuantity = HeaderBytesQuantity + CRCBytesQuantity + CRCPaddingBytesQuantity + MetadataLengthBytesQuantity
+const MinRequiredFileLength = FileMetaBytesQuantity + 1
 
 func main() {
 
@@ -21,7 +22,7 @@ func main() {
 
 	fileSize := displayFileInfo(f)
 
-	if fileSize < 25 {
+	if fileSize < MinRequiredFileLength {
 		fmt.Println("File seems corrupted. Aborting")
 		os.Exit(1)
 	}
