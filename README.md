@@ -7,7 +7,13 @@ This is a basic tool to handle Fluent Bit's flb (chunk) files.
 
 These are the subcommands currently supported:
 
+* [Check](#check)
+* [Dump](#dump)
+
 ### check
+
+It will check for corrupted/invalid flb files.
+
 ```shell
 Usage of check:
   -dir string
@@ -16,8 +22,6 @@ Usage of check:
         File to be processed
   -v    Activates verbose mode
 ```
-
-It will check for corrupted flb files.
 
 ```shell
 $ chunkreader check
@@ -39,6 +43,8 @@ Corrupted
 ```
 
 ### dump
+
+It will dump the user content of the flb file to the output file.
 
 ```shell
 Usage of dump:
