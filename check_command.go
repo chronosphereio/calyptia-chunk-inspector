@@ -94,7 +94,6 @@ func getMetadataLength(f *os.File, verbose bool) uint16 {
 	check(err)
 
 	bytesRead, _ := readNBytesFromFile(f, MetadataLengthBytesQuantity)
-	fmt.Printf("len: %d", bytesRead)
 	data := binary.BigEndian.Uint16(bytesRead)
 	if verbose {
 		fmt.Printf("Metadata Length: %d\n", data)
