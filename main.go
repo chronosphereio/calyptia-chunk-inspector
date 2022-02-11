@@ -6,8 +6,6 @@ import (
 	"os"
 )
 
-var verbose *bool
-
 func main() {
 
 	if len(os.Args) < 2 {
