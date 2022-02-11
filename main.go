@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 )
 
@@ -28,9 +27,9 @@ func main() {
 	case "dump":
 		err := dumpCmd.Parse(os.Args[2:])
 		check(err)
-		fmt.Println("subcommand 'dump'")
-		fmt.Println("flbFile:", *dumpFlbFile)
-		fmt.Println("dumpOutFile:", *dumpOutFile)
+		options := DumpOption{*dumpFlbFile, *dumpOutFile}
+		err = Dump(options)
+		check(err)
 		os.Exit(0)
 	case "check":
 		err := checkCmd.Parse(os.Args[2:])
@@ -44,29 +43,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	flag.Parse()
-
-	if *verbose {
-		log.SetOutput(os.Stdout)
-	} else {
-		log.SetOutput(os.Stderr)
-	}
-
-}
-
-func readUserData(f *os.File, metadataLength uint16, fileSize int64) {
-	remainingBytes := fileSize - int64(FileMetaBytesQuantity+metadataLength)
-	bytesRead, content := readNBytesFromFile(f, remainingBytes)
-	if *verbose {
-		fmt.Printf("%d bytes read from User Content: %s\n", content, string(bytesRead[:content]))
-	}
-}
-
-func readMetadata(f *os.File, mLength uint16) {
-	bytesRead, content := readNBytesFromFile(f, int64(mLength))
-	if *verbose {
-		fmt.Printf("%d bytes read from Metadata: %s\n", content, string(bytesRead[:content]))
-	}
 }
 
 /**
