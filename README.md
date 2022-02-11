@@ -37,3 +37,14 @@ Filename 1-1642796694.873134717.flb
 File size: 24 bytes
 Corrupted
 ```
+
+### dump
+
+```shell
+Usage of dump:
+  -file string
+        Flb file to be dumped.
+  -out string
+        Output file. By default out.json (default "out.json")
+
+```
