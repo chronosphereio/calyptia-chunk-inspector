@@ -7,4 +7,6 @@ const (
 	MetadataLengthBytesQuantity = 2
 	FileMetaBytesQuantity       = HeaderBytesQuantity + CRCBytesQuantity + CRCPaddingBytesQuantity + MetadataLengthBytesQuantity
 	MinRequiredFileLength       = FileMetaBytesQuantity + 1
+
+	MetadataStart = HeaderBytesQuantity + CRCBytesQuantity + CRCPaddingBytesQuantity
 )
