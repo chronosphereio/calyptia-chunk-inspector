@@ -14,21 +14,20 @@ func Check(option CheckOption) error {
 	if option.FileName != "" {
 		err := checkFile(option.FileName, option.Verbose)
 		check(err)
-		os.Exit(0)
-	}
-
-	if option.Directory != "" {
-		_, err := ioutil.ReadDir(option.Directory)
-		check(err)
-		err = filepath.Walk(option.Directory,
-			func(path string, info fs.FileInfo, err error) error {
-				if strings.HasSuffix(path, ".flb") {
-					err = checkFile(path, option.Verbose)
-					check(err)
-				}
-				return nil
-			})
-		check(err)
+	} else {
+		if option.Directory != "" {
+			_, err := ioutil.ReadDir(option.Directory)
+			check(err)
+			err = filepath.Walk(option.Directory,
+				func(path string, info fs.FileInfo, err error) error {
+					if strings.HasSuffix(path, ".flb") {
+						err = checkFile(path, option.Verbose)
+						check(err)
+					}
+					return nil
+				})
+			check(err)
+		}
 	}
 
 	return nil
@@ -91,7 +90,11 @@ func readPadding(f *os.File, verbose bool) {
 }
 
 func getMetadataLength(f *os.File, verbose bool) uint16 {
+	_, err := f.Seek(MetadataStart, 0)
+	check(err)
+
 	bytesRead, _ := readNBytesFromFile(f, MetadataLengthBytesQuantity)
+	fmt.Printf("len: %d", bytesRead)
 	data := binary.BigEndian.Uint16(bytesRead)
 	if verbose {
 		fmt.Printf("Metadata Length: %d\n", data)
