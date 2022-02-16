@@ -14,11 +14,11 @@ func main() {
 	}
 	dumpCmd := flag.NewFlagSet("dump", flag.ExitOnError)
 	dumpFlbFile := dumpCmd.String("file", "", "Flb file to be dumped.")
-	dumpOutFile := dumpCmd.String("out", "out.json", "Output file")
+	dumpOutFile := dumpCmd.String("out", "out.json", "Output file.")
 
 	checkCmd := flag.NewFlagSet("check", flag.ExitOnError)
 	fileName := checkCmd.String("file", "", "File to be processed. Mutually exclusive with -dir.")
-	verbose := checkCmd.Bool("v", false, "Activates verbose mode")
+	verbose := checkCmd.Bool("v", false, "Activates verbose mode.")
 	directory := checkCmd.String("dir", ".", "Directory containing the file(s) to process. Mutually exclusive with -file.")
 
 	switch os.Args[1] {
