@@ -14,7 +14,7 @@ func main() {
 	}
 	dumpCmd := flag.NewFlagSet("dump", flag.ExitOnError)
 	dumpFlbFile := dumpCmd.String("file", "", "Flb file to be dumped.")
-	dumpOutFile := dumpCmd.String("out", "out.json", "Output file.")
+	dumpOutFile := dumpCmd.String("out", "dump.out", "Output file.")
 
 	checkCmd := flag.NewFlagSet("check", flag.ExitOnError)
 	fileName := checkCmd.String("file", "", "File to be processed. Mutually exclusive with -dir.")
