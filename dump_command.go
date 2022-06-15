@@ -17,15 +17,15 @@ func Dump(option DumpOption) error {
 
 	f, err := os.Open(option.FileName)
 	check(err)
-	mLength := getMetadataLength(f, false)
+	mLength := getMetadataLength(f, option.Verbose)
 
 	if mLength > 0 {
-		readMetadata(f, mLength, false)
+		readMetadata(f, mLength, option.Verbose)
 	}
 
-	fileSize := fileInfo(f, false)
+	fileSize := fileInfo(f, option.Verbose)
 
-	output := readUserData(f, mLength, fileSize, false)
+	output := readUserData(f, mLength, fileSize, option.Verbose)
 
 	outputFile, err := os.Create(option.Output)
 	check(err)
@@ -51,6 +51,6 @@ func readUserData(f *os.File, metadataLength uint16, fileSize int64, verbose boo
 func readMetadata(f *os.File, mLength uint16, verbose bool) {
 	bytesRead, content := readNBytesFromFile(f, int64(mLength))
 	if verbose {
-		fmt.Printf("%d bytes read from Metadata: %s\n", content, string(bytesRead[:content]))
+		fmt.Printf("%d bytes read from Metadata: [%s]\n", content, string(bytesRead[:content]))
 	}
 }

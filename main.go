@@ -15,6 +15,7 @@ func main() {
 	dumpCmd := flag.NewFlagSet("dump", flag.ExitOnError)
 	dumpFlbFile := dumpCmd.String("file", "", "Flb file to be dumped.")
 	dumpOutFile := dumpCmd.String("out", "dump.out", "Output file.")
+	dumpVerbose := dumpCmd.Bool("v", false, "Activates verbose mode.")
 
 	checkCmd := flag.NewFlagSet("check", flag.ExitOnError)
 	fileName := checkCmd.String("file", "", "File to be processed. Mutually exclusive with -dir.")
@@ -25,7 +26,7 @@ func main() {
 	case "dump":
 		err := dumpCmd.Parse(os.Args[2:])
 		check(err)
-		options := DumpOption{*dumpFlbFile, *dumpOutFile}
+		options := DumpOption{*dumpFlbFile, *dumpOutFile, *dumpVerbose}
 		err = Dump(options)
 		check(err)
 		os.Exit(0)
