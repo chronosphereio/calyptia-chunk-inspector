@@ -31,7 +31,7 @@ func Dump(option DumpOption) error {
 
 	userData := readUserData(f, mLength, fileSize, option.Verbose)
 
-	thePointer := unsafe.Pointer(&userData)
+	thePointer := unsafe.Pointer(C.CBytes(userData))
 	decode(thePointer, len(userData))
 
 	outputFile, err := os.Create(option.Output)
