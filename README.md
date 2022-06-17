@@ -51,6 +51,6 @@ Usage of dump:
   -file string
         Flb file to be dumped.
   -out string
-        Output file. (default "out.json")
+        Output file. (default "dump.out")
 
 ```
