@@ -51,6 +51,7 @@ func decode(data unsafe.Pointer, length int) int {
 		fmt.Errorf("dec is nil")
 	}
 
+	count := 0
 	for {
 		var ts interface{}
 		var record map[interface{}]interface{}
@@ -73,12 +74,12 @@ func decode(data unsafe.Pointer, length int) int {
 		}
 
 		// Print record keys and values
-		fmt.Printf("[%s, {", timestamp.String())
+		fmt.Printf("[%d] [%s, {", count, timestamp.String())
 		for k, v := range record {
 			fmt.Printf("\"%s\": %s, ", k, v)
 		}
-		fmt.Printf("}\n")
-
+		fmt.Printf("}]\n")
+		count++
 	}
 	return 0
 
