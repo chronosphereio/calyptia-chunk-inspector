@@ -1,4 +1,4 @@
-module github.com/lecaros/chunkreader
+module github.com/calyptia/chunk-inspector
 
 go 1.17
 
