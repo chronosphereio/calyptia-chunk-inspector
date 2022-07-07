@@ -1,4 +1,4 @@
-# ChunkReader
+# Chunk Inspector
 
 This is a basic tool to handle Fluent Bit's flb (chunk) files.
 
@@ -24,12 +24,12 @@ Usage of check:
 ```
 
 ```shell
-$ chunkreader check
+$ chunk-inspector check
 Filename 1-1642796665.47813680.flb OK
 Filename 1-1642796694.873134717.flb Corrupted
 ```
 ```shell
-$ chunkreader check -v    
+$ chunk-inspector check -v    
 Filename 1-1642796665.47813680.flb 
 File size: 660 bytes
 2 bytes from header: �
