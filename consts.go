@@ -11,3 +11,5 @@ const (
 
 	MetadataStart = HeaderBytesQuantity + CRCBytesQuantity + CRCPaddingBytesQuantity
 )
+
+var ExpectedHeader = []byte{0xC1, 0x00}
