@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/vmihailenco/msgpack/v5"
 )
 
 func Check(option CheckOption) error {
@@ -42,14 +44,21 @@ func checkFile(fileName string, verbose bool) error {
 	fileSize := fileInfo(f, verbose)
 
 	if fileSize < MinRequiredFileLength {
-		fmt.Println("Corrupted")
+		fmt.Println("CORRUPTED (file size too small)")
 		os.Exit(1)
 	}
 
 	readHeader(f, verbose)
 	readCRC(f, verbose)
 	readPadding(f, verbose)
-	getMetadataLength(f, verbose)
+	metadataLength := getMetadataLength(f, verbose)
+	if metadataLength > 0 {
+		readChunkType(f, metadataLength, verbose)
+	} else {
+		if verbose {
+			fmt.Println("Chunk Type: logs (assumed, no metadata)")
+		}
+	}
 
 	err = f.Close()
 	check(err)
@@ -99,6 +108,77 @@ func getMetadataLength(f *os.File, verbose bool) uint16 {
 		fmt.Printf("Metadata Length: %d\n", data)
 	}
 	return data
+}
+
+func readChunkType(f *os.File, metadataLength uint16, verbose bool) {
+	metadataBytes, _ := readNBytesFromFile(f, int64(metadataLength))
+
+	chunkTypes := map[uint8]string{
+		0: "logs",
+		1: "metrics",
+		2: "traces",
+		3: "blobs",
+		4: "profiles",
+	}
+
+	// First byte of metadata is the event_type
+	if len(metadataBytes) > 0 {
+		typeByte := metadataBytes[0]
+		if chunkType, ok := chunkTypes[typeByte]; ok && verbose {
+			fmt.Printf("Chunk Type: %s\n", chunkType)
+			return
+		}
+	}
+
+	if len(metadataBytes) > 0 {
+		if metadataBytes[0] == 0x91 && verbose {
+			fmt.Println("Chunk Type: logs (legacy, single entry array)")
+			return
+		}
+		if metadataBytes[0] == 0x81 {
+			// Possibly a single entry map.
+		}
+	}
+
+	// Fallback to msgpack unmarshal if the first byte didn't match
+	// Some older versions might use a different format
+	var metadataMap map[interface{}]interface{}
+	err := msgpack.Unmarshal(metadataBytes, &metadataMap)
+
+	if err != nil && verbose {
+		fmt.Println("Chunk Type: unknown (could not decode metadata)")
+		return
+	}
+
+	typeVal, ok := metadataMap["type"]
+	if !ok && verbose {
+		fmt.Println("Chunk Type: unknown (metadata has no type field)")
+		return
+	}
+
+	// 1 = logs, 2 = metrics, 3 = traces (old/legacy mapping)
+	legacyChunkTypes := map[uint64]string{
+		0: "unknown",
+		1: "logs",
+		2: "metrics",
+		3: "traces",
+	}
+
+	typeInt, ok := typeVal.(uint64)
+	if !ok && verbose {
+		fmt.Println("Chunk Type: unknown (type field is not integer)")
+		return
+	}
+
+	if chunkType, ok := legacyChunkTypes[typeInt]; ok {
+		if verbose {
+			fmt.Printf("Chunk Type: %s (legacy)\n", chunkType)
+		}
+	} else {
+		if verbose {
+			fmt.Printf("Chunk Type: unknown (%d, legacy)\n", typeInt)
+		}
+	}
 }
 
 func readNBytesFromFile(file *os.File, bytesToRead int64) ([]byte, int) {
