@@ -3,10 +3,12 @@ package main
 import "C"
 import (
 	"fmt"
-	"github.com/fluent/fluent-bit-go/output"
 	"os"
+	"sort"
 	"time"
 	"unsafe"
+
+	"github.com/fluent/fluent-bit-go/output"
 )
 
 func Dump(option DumpOption) error {
@@ -21,6 +23,8 @@ func Dump(option DumpOption) error {
 
 	f, err := os.Open(option.FileName)
 	check(err)
+	defer f.Close()
+
 	mLength := getMetadataLength(f, option.Verbose)
 
 	if mLength > 0 {
@@ -48,7 +52,8 @@ func Dump(option DumpOption) error {
 func decode(data unsafe.Pointer, length int) int {
 	decoder := output.NewDecoder(data, length)
 	if decoder == nil {
-		fmt.Errorf("dec is nil")
+		fmt.Fprintln(os.Stderr, "decoder is nil")
+		os.Exit(1)
 	}
 
 	count := 0
@@ -73,10 +78,22 @@ func decode(data unsafe.Pointer, length int) int {
 			timestamp = time.Now()
 		}
 
-		// Print record keys and values
-		fmt.Printf("[%d] [%s, {", count, timestamp.String())
+		type kv struct {
+			key string
+			val interface{}
+		}
+		entries := make([]kv, 0, len(record))
 		for k, v := range record {
-			fmt.Printf("\"%s\": %s, ", k, v)
+			entries = append(entries, kv{fmt.Sprintf("%s", k), v})
+		}
+		sort.Slice(entries, func(i, j int) bool { return entries[i].key < entries[j].key })
+
+		fmt.Printf("[%d] [%s, {", count, timestamp.String())
+		for i, e := range entries {
+			if i > 0 {
+				fmt.Print(", ")
+			}
+			fmt.Printf("\"%s\": %s", e.key, e.val)
 		}
 		fmt.Printf("}]\n")
 		count++
@@ -86,21 +103,22 @@ func decode(data unsafe.Pointer, length int) int {
 }
 
 func readUserData(f *os.File, metadataLength uint16, fileSize int64, verbose bool) []byte {
-	userDataStart := int64(FileMetaBytesQuantity - MetadataHeader + metadataLength)
+	userDataStart := int64(FileMetaBytesQuantity-MetadataHeader) + int64(metadataLength)
 	remainingBytes := fileSize - userDataStart
-	f.Seek(userDataStart, 0)
-	bytesRead, content := readNBytesFromFile(f, remainingBytes)
-	userData := bytesRead[:content]
+	_, err := f.Seek(userDataStart, 0)
+	check(err)
+	userData := readNBytesFromFile(f, remainingBytes)
 	if verbose {
-		fmt.Printf("%d bytes read from User Content: [%s]\n", content, string(userData))
+		fmt.Printf("%d bytes read from User Content: [%s]\n", len(userData), string(userData))
 	}
-	return bytesRead
+	return userData
 }
 
 func readMetadata(f *os.File, mLength uint16, verbose bool) {
-	f.Seek(4, 1)                                               //metadata headers
-	bytesRead, size := readNBytesFromFile(f, int64(mLength-4)) //metadata headers bytes are part of the metadata declared size
+	_, err := f.Seek(MetadataHeader, 1) //metadata headers
+	check(err)
+	bytesRead := readNBytesFromFile(f, int64(mLength-MetadataHeader)) //metadata headers bytes are part of the metadata declared size
 	if verbose {
-		fmt.Printf("%d bytes read from Metadata: [%s]\n", size, string(bytesRead[:size]))
+		fmt.Printf("%d bytes read from Metadata: [%s]\n", len(bytesRead), string(bytesRead))
 	}
 }
