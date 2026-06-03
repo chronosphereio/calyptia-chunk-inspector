@@ -1,13 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/vmihailenco/msgpack/v5"
 )
@@ -16,22 +16,25 @@ func Check(option CheckOption) error {
 	if option.FileName != "" {
 		err := checkFile(option.FileName, option.Verbose)
 		check(err)
-	} else {
-		if option.Directory != "" {
-			_, err := ioutil.ReadDir(option.Directory)
-			check(err)
-			err = filepath.Walk(option.Directory,
-				func(path string, info fs.FileInfo, err error) error {
-					if strings.HasSuffix(path, ".flb") {
-						err = checkFile(path, option.Verbose)
-						check(err)
-					}
-					return nil
-				})
-			check(err)
-		}
+		return nil
 	}
 
+	if option.Directory == "" {
+		return nil
+	}
+
+	err := filepath.Walk(option.Directory,
+		func(path string, info fs.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if !info.IsDir() && filepath.Ext(path) == ".flb" {
+				err = checkFile(path, option.Verbose)
+				check(err)
+			}
+			return nil
+		})
+	check(err)
 	return nil
 }
 
@@ -48,7 +51,10 @@ func checkFile(fileName string, verbose bool) error {
 		os.Exit(1)
 	}
 
-	readHeader(f, verbose)
+	if !readHeader(f, verbose) {
+		fmt.Println("Corrupted (bad header)")
+		os.Exit(1)
+	}
 	readCRC(f, verbose)
 	readPadding(f, verbose)
 	metadataLength := getMetadataLength(f, verbose)
@@ -59,9 +65,6 @@ func checkFile(fileName string, verbose bool) error {
 			fmt.Println("Chunk Type: logs (assumed, no metadata)")
 		}
 	}
-
-	err = f.Close()
-	check(err)
 
 	fmt.Println("OK")
 	return nil
@@ -76,25 +79,25 @@ func fileInfo(f *os.File, verbose bool) int64 {
 	return fileInformation.Size()
 }
 
-func readHeader(f *os.File, verbose bool) ([]byte, int) {
-	bytesRead, content := readNBytesFromFile(f, HeaderBytesQuantity)
+func readHeader(f *os.File, verbose bool) bool {
+	bytesRead := readNBytesFromFile(f, HeaderBytesQuantity)
 	if verbose {
-		fmt.Printf("%d bytes from header: %s\n", content, string(bytesRead[:content]))
+		fmt.Printf("%d bytes from header: % X\n", len(bytesRead), bytesRead)
 	}
-	return bytesRead, content
+	return bytes.Equal(bytesRead, ExpectedHeader)
 }
 
 func readCRC(f *os.File, verbose bool) {
-	bytesRead, content := readNBytesFromFile(f, CRCBytesQuantity)
+	bytesRead := readNBytesFromFile(f, CRCBytesQuantity)
 	if verbose {
-		fmt.Printf("%d bytes from CRC: %s\n", content, string(bytesRead[:content]))
+		fmt.Printf("%d bytes from CRC: % X\n", len(bytesRead), bytesRead)
 	}
 }
 
 func readPadding(f *os.File, verbose bool) {
-	bytesRead, content := readNBytesFromFile(f, CRCPaddingBytesQuantity)
+	bytesRead := readNBytesFromFile(f, CRCPaddingBytesQuantity)
 	if verbose {
-		fmt.Printf("%d bytes read from Padding: %s\n", content, string(bytesRead[:content]))
+		fmt.Printf("%d bytes read from Padding: % X\n", len(bytesRead), bytesRead)
 	}
 }
 
@@ -102,7 +105,7 @@ func getMetadataLength(f *os.File, verbose bool) uint16 {
 	_, err := f.Seek(MetadataStart, 0)
 	check(err)
 
-	bytesRead, _ := readNBytesFromFile(f, MetadataLengthBytesQuantity)
+	bytesRead := readNBytesFromFile(f, MetadataLengthBytesQuantity)
 	data := binary.BigEndian.Uint16(bytesRead)
 	if verbose {
 		fmt.Printf("Metadata Length: %d\n", data)
@@ -111,7 +114,7 @@ func getMetadataLength(f *os.File, verbose bool) uint16 {
 }
 
 func readChunkType(f *os.File, metadataLength uint16, verbose bool) {
-	metadataBytes, _ := readNBytesFromFile(f, int64(metadataLength))
+	metadataBytes := readNBytesFromFile(f, int64(metadataLength))
 
 	chunkTypes := map[uint8]string{
 		0: "logs",
@@ -181,11 +184,11 @@ func readChunkType(f *os.File, metadataLength uint16, verbose bool) {
 	}
 }
 
-func readNBytesFromFile(file *os.File, bytesToRead int64) ([]byte, int) {
-	b1 := make([]byte, bytesToRead)
-	n1, err := file.Read(b1)
+func readNBytesFromFile(file *os.File, bytesToRead int64) []byte {
+	buf := make([]byte, bytesToRead)
+	_, err := io.ReadFull(file, buf)
 	check(err)
-	return b1, n1
+	return buf
 }
 
 func check(err error) {

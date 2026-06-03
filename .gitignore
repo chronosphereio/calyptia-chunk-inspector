@@ -2,3 +2,4 @@
 *.flb
 
 dist/
+chunk-inspector
